@@ -54,11 +54,7 @@ export function toHref(g: any): (link: LDO) => DefInput {
       },
       dec: gen.typeDeclaration(
         hrefTemplateExport,
-        gen.brandCombinator(
-          g.fromSchema(schema),
-          (jx) => g.generateChecks(jx, schema),
-          hrefTemplateExport,
-        ),
+        g.generateBrandTypeIfNeeded(schema, g.fromSchema(schema), hrefTemplateExport),
         true,
       ),
     };
@@ -84,11 +80,7 @@ export function toHrefSchema(g: any): (link: LDO) => DefInput {
       },
       dec: gen.typeDeclaration(
         hrefVariablesExport,
-        gen.brandCombinator(
-          g.fromSchema(schema),
-          (jx) => g.generateChecks(jx, schema),
-          hrefVariablesExport,
-        ),
+        g.generateBrandTypeIfNeeded(schema, g.fromSchema(schema), hrefVariablesExport),
         true,
       ),
     };
@@ -115,11 +107,7 @@ export function toSubmissionSchema(g: any): (link: LDO) => DefInput {
       },
       dec: gen.typeDeclaration(
         requestBodyExport,
-        gen.brandCombinator(
-          g.fromSchema(schema),
-          (jx) => g.generateChecks(jx, schema),
-          requestBodyExport,
-        ),
+        g.generateBrandTypeIfNeeded(schema, g.fromSchema(schema), requestBodyExport),
         true,
       ),
     };
@@ -161,11 +149,7 @@ export function toHeaderSchema(g: any): (link: LDO) => DefInput {
       },
       dec: gen.typeDeclaration(
         requestHeadersExport,
-        gen.brandCombinator(
-          g.fromSchema(schema),
-          (jx) => g.generateChecks(jx, schema),
-          requestHeadersExport,
-        ),
+        g.generateBrandTypeIfNeeded(schema, g.fromSchema(schema), requestHeadersExport),
         true,
       ),
     };
@@ -191,11 +175,7 @@ export function toTargetSchema(g: any): (link: LDO) => DefInput {
       },
       dec: gen.typeDeclaration(
         responseBodyExport,
-        gen.brandCombinator(
-          g.fromSchema(schema),
-          (jx) => g.generateChecks(jx, schema),
-          responseBodyExport,
-        ),
+        g.generateBrandTypeIfNeeded(schema, g.fromSchema(schema), responseBodyExport),
         true,
       ),
     };
@@ -242,11 +222,7 @@ export function toTargetHints(g: any): (link: LDO) => DefInput {
       },
       dec: gen.typeDeclaration(
         responseHeadersExport,
-        gen.brandCombinator(
-          g.fromSchema(schema),
-          (jx) => g.generateChecks(jx, schema),
-          responseHeadersExport,
-        ),
+        g.generateBrandTypeIfNeeded(schema, g.fromSchema(schema), responseHeadersExport),
         true,
       ),
     };
