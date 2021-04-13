@@ -306,83 +306,102 @@ export type Null = t.TypeOf<typeof Null>
   type JSVar = string;
   type JSBoolean = string;
 
-  function checkFormat(jx: JSVar, format: string): JSBoolean {
+  type CheckFn = (jx: JSVar) => JSBoolean;
+
+  const checkFormat = (format: string) => (jx: JSVar): JSBoolean => {
     if (format === 'ipv4') {
       return `( typeof ${jx} !== 'string' || ((octets) => octets.length === 4 && octets.map(Number).every((octet) => Number.isInteger(octet) && octet >= 0x00 && octet <= 0xff))(${jx}.split('.')) )`;
     }
     notImplemented(format, 'format');
     return String(true);
-  }
+  };
 
-  function checkPattern(jx: JSVar, pattern: string): JSBoolean {
+  const checkPattern = (pattern: string) => (jx: JSVar): JSBoolean => {
     const stringLiteral = JSON.stringify(pattern);
     return `( typeof ${jx} !== 'string' || ${jx}.match(RegExp(${stringLiteral})) !== null )`;
-  }
+  };
 
-  function checkRegexp(jx: JSVar, regexp: AjvKeywordsRegexp): JSBoolean {
+  const checkRegexp = (regexp: AjvKeywordsRegexp) => (jx: JSVar): JSBoolean => {
     const { pattern, flags } = getRegexpObject(regexp);
     const patternLiteral = JSON.stringify(pattern);
     const flagsLiteral = JSON.stringify(flags);
     return `( typeof ${jx} !== 'string' || ${jx}.match(RegExp(${patternLiteral}, ${flagsLiteral})) !== null )`;
-  }
+  };
 
-  function checkMinLength(jx: JSVar, minLength: number): JSBoolean {
+  const checkMinLength = (minLength: number) => (jx: JSVar): JSBoolean => {
     return `( typeof ${jx} !== 'string' || ${jx}.length >= ${minLength} )`;
-  }
+  };
 
-  function checkMaxLength(jx: JSVar, maxLength: number): JSBoolean {
+  const checkMaxLength = (maxLength: number) => (jx: JSVar): JSBoolean => {
     return `( typeof ${jx} !== 'string' || ${jx}.length <= ${maxLength} )`;
-  }
+  };
 
-  function checkMinimum(jx: JSVar, minimum: number): JSBoolean {
+  const checkMinimum = (minimum: number) => (jx: JSVar): JSBoolean => {
     return `( typeof ${jx} !== 'number' || ${jx} >= ${minimum} )`;
-  }
+  };
 
-  function checkMaximum(jx: JSVar, maximum: number): JSBoolean {
+  const checkMaximum = (maximum: number) => (jx: JSVar): JSBoolean => {
     return `( typeof ${jx} !== 'number' || ${jx} <= ${maximum} )`;
-  }
+  };
 
-  function checkMultipleOf(jx: JSVar, divisor: number): JSBoolean {
+  const checkMultipleOf = (divisor: number) => (jx: JSVar): JSBoolean => {
     return `( typeof ${jx} !== 'number' || ${jx} % ${divisor} === 0 )`;
-  }
+  };
 
-  function checkInteger(jx: JSVar): JSBoolean {
+  const checkInteger = (jx: JSVar): JSBoolean => {
     return `( Number.isInteger(${jx}) )`;
-  }
+  };
 
-  function checkMinItems(jx: JSVar, minItems: number): JSBoolean {
+  const checkMinItems = (minItems: number) => (jx: JSVar): JSBoolean => {
     return `( Array.isArray(${jx}) === false || ${jx}.length >= ${minItems} )`;
-  }
+  };
 
-  function checkMaxItems(jx: JSVar, maxItems: number): JSBoolean {
+  const checkMaxItems = (maxItems: number) => (jx: JSVar): JSBoolean => {
     return `( Array.isArray(${jx}) === false || ${jx}.length <= ${maxItems} )`;
-  }
+  };
 
-  function checkUniqueItems(jx: JSVar): JSBoolean {
+  const checkUniqueItems = (jx: JSVar): JSBoolean => {
     return `( Array.isArray(${jx}) === false || ${jx}.length === [...new Set(${jx})].length )`;
+  };
+
+  function generateChecks(schema: JSONSchema7): Array<CheckFn> {
+    return [
+      ...(schema.pattern ? [checkPattern(schema.pattern)] : []),
+      ...((schema as AjvSchema).regexp
+        ? [checkRegexp((schema as AjvSchema).regexp)]
+        : []),
+      ...(schema.format ? [checkFormat(schema.format)] : []),
+      ...(schema.minLength ? [checkMinLength(schema.minLength)] : []),
+      ...(schema.maxLength ? [checkMaxLength(schema.maxLength)] : []),
+      ...(schema.minimum ? [checkMinimum(schema.minimum)] : []),
+      ...(schema.maximum ? [checkMaximum(schema.maximum)] : []),
+      ...(schema.multipleOf ? [checkMultipleOf(schema.multipleOf)] : []),
+      ...(schema.type === 'integer' ? [checkInteger] : []),
+      ...(schema.minItems ? [checkMinItems(schema.minItems)] : []),
+      ...(schema.maxItems ? [checkMaxItems(schema.maxItems)] : []),
+      ...(schema.uniqueItems === true ? [checkUniqueItems] : []),
+    ];
   }
 
-  function generateChecks(jx: JSVar, schema: JSONSchema7): JSBoolean {
-    const checks: Array<string> = [
-      ...(schema.pattern ? [checkPattern(jx, schema.pattern)] : []),
-      ...((schema as AjvSchema).regexp
-        ? [checkRegexp(jx, (schema as AjvSchema).regexp)]
-        : []),
-      ...(schema.format ? [checkFormat(jx, schema.format)] : []),
-      ...(schema.minLength ? [checkMinLength(jx, schema.minLength)] : []),
-      ...(schema.maxLength ? [checkMaxLength(jx, schema.maxLength)] : []),
-      ...(schema.minimum ? [checkMinimum(jx, schema.minimum)] : []),
-      ...(schema.maximum ? [checkMaximum(jx, schema.maximum)] : []),
-      ...(schema.multipleOf ? [checkMultipleOf(jx, schema.multipleOf)] : []),
-      ...(schema.type === 'integer' ? [checkInteger(jx)] : []),
-      ...(schema.minItems ? [checkMinItems(jx, schema.minItems)] : []),
-      ...(schema.maxItems ? [checkMaxItems(jx, schema.maxItems)] : []),
-      ...(schema.uniqueItems === true ? [checkUniqueItems(jx)] : []),
-    ];
+  function printChecks(checks: Array<CheckFn>, jx: JSVar): JSBoolean {
     if (checks.length < 1) {
       return 'true';
     }
-    return checks.join(' && ');
+    return checks.map((check) => check(jx)).join(' && ');
+  }
+
+  function generateBrandTypeIfNeeded(
+    schema: JSONSchema7,
+    type: gen.TypeReference,
+    name: string,
+  ): gen.TypeReference {
+    const brandChecks = generateChecks(schema);
+
+    if (brandChecks.length > 0) {
+      return gen.brandCombinator(type, (jx) => printChecks(brandChecks, jx), name);
+    } else {
+      return type;
+    }
   }
 
   function calculateImportPath(filePath: string) {
@@ -802,7 +821,7 @@ export type Null = t.TypeOf<typeof Null>
       const [combinator] = combinators;
       return combinator;
     }
-    if (generateChecks('x', schema).length > 1) {
+    if (printChecks(generateChecks(schema), 'x').length > 1) {
       // skip checks
       return gen.unknownType;
     }
@@ -880,14 +899,11 @@ export type Null = t.TypeOf<typeof Null>
                 examples: [],
                 defaultValue: undefined,
               },
-              dec: gen.typeDeclaration(
-                name,
-                gen.brandCombinator(fromRef(scem), (_x) => String(true), name),
-                true,
-              ),
+              dec: gen.typeDeclaration(name, fromRef(scem), true),
             },
           ];
         }
+
         return [
           {
             meta: {
@@ -898,11 +914,7 @@ export type Null = t.TypeOf<typeof Null>
             },
             dec: gen.typeDeclaration(
               name,
-              gen.brandCombinator(
-                fromSchema(scem, true),
-                (jx) => generateChecks(jx, scem),
-                name,
-              ),
+              generateBrandTypeIfNeeded(scem, fromSchema(scem, true), name),
               true,
             ),
           },
@@ -935,11 +947,11 @@ export type Null = t.TypeOf<typeof Null>
         },
         dec: gen.typeDeclaration(
           defaultExport,
-          gen.brandCombinator(
+          generateBrandTypeIfNeeded(
+            root,
             isRefObject(root)
               ? error('schema root can not be a $ref object')
               : fromSchema(root, true),
-            (jx) => generateChecks(jx, root),
             defaultExport,
           ),
           true,
@@ -962,7 +974,7 @@ export type Null = t.TypeOf<typeof Null>
       imps,
       exps,
       fromSchema,
-      generateChecks,
+      generateBrandTypeIfNeeded,
     })(schema);
     return namedDefs.concat(rootDef).concat(hyperDef);
   }
