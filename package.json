@@ -10,6 +10,7 @@
     "iotsfjs": "lib/cli.js"
   },
   "scripts": {
+    "prepare": "npm run clean && tsc && chmod u+x ./lib/cli.js",
     "test": "jest --no-cache",
     "clean": "rm -rf lib tmp",
     "typecheck": "tsc -p src/tsconfig.json",
