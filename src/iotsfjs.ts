@@ -117,13 +117,18 @@ export function* iotsfjs(
 
   // ALL_UPPER-CASE => ALL_UPPERCASE
   function typenameFromAllCaps(allCaps: string): string {
-    return allCaps.split('-').join('');
+    const typename = allCaps.split('-').join('');
+    return sanitizeIdentifier(typename);
   }
 
   // random-caseCombination => RandomCaseCombination
   function typenameFromKebab(kebab: string): string {
     const typename = kebab.split('-').map(capitalize).join('');
-    return typename;
+    return sanitizeIdentifier(typename);
+  }
+
+  function sanitizeIdentifier(identifier: string): string {
+    return identifier.replace(/^[^a-zA-Z_$]|[^\w$]/g, '_');
   }
 
   function isAllCaps(randomCase: string): boolean {
