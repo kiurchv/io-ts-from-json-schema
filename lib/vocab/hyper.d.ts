@@ -1,0 +1,24 @@
+import { JSONSchema7 } from 'json-schema';
+import { DefInput } from '../types/def';
+declare type Template = string;
+declare type Variable = string;
+declare type Field = string;
+declare type Constant = string;
+declare type LDO = {
+    rel: 'implementation';
+    href: Template;
+    hrefSchema: Record<Variable, JSONSchema7>;
+    headerSchema: Record<Field, JSONSchema7>;
+    submissionSchema: JSONSchema7;
+    targetHints: Record<Field, Array<Constant>>;
+    targetSchema: JSONSchema7;
+};
+export declare function toHref(g: any): (link: LDO) => DefInput;
+export declare function toHrefSchema(g: any): (link: LDO) => DefInput;
+export declare function toSubmissionSchema(g: any): (link: LDO) => DefInput;
+export declare function toHeaderSchema(g: any): (link: LDO) => DefInput;
+export declare function toTargetSchema(g: any): (link: LDO) => DefInput;
+export declare function toTargetHints(g: any): (link: LDO) => DefInput;
+export declare function fromSelfLink(g: any): (link: LDO) => Array<DefInput>;
+export declare function fromHyper(g: any): (root: JSONSchema7) => Array<DefInput>;
+export {};
